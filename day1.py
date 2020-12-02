@@ -3,6 +3,7 @@
 
 from functools import reduce
 
+
 def entriesThatSum(n, m, array, exclude=[]):
     """Given an ordered array of numbers returns the m entries that sum to n, if any.
 
@@ -19,8 +20,8 @@ def entriesThatSum(n, m, array, exclude=[]):
             for j in range(len(array) - 1, 0, -1):
                 if j in exclude:
                     continue
-                if array[i] + array[j] > n:
-                    continue
+                elif array[i] + array[j] < n:
+                    break
                 elif array[i] + array[j] == n:
                     return [array[i], array[j]]
     else:
@@ -28,6 +29,7 @@ def entriesThatSum(n, m, array, exclude=[]):
             parts = entriesThatSum(n - array[i], m - 1, array, exclude + [i])
             if parts is not None:
                 return [array[i]] + parts
+
 
 with open("input/day1.txt") as f:
     lines = [int(line.rstrip()) for line in f]
