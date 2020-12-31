@@ -2,161 +2,103 @@
 # --- Day 11: Seating System ---
 
 
-class Model:
-    def __init__(self, data):
-        self._states = [self._to_matrix(data)]
-        self._dim = [len(self._states[-1]), len(self._states[-1][0])]
+from typing import List, Tuple, Callable
 
-    def step(self):
-        new_state = []
-        for r in range(self._dim[0]):
-            new_state.append([])
-            for c in range(self._dim[1]):
-                value = self._states[-1][r][c]
-                occupied = 0
-                for i in range(r - 1, r + 2):
-                    for j in range(c - 1, c + 2):
-                        if r == i and c == j:
-                            continue
-                        if i < 0 or i > self._dim[0] - 1:
-                            continue
-                        if j < 0 or j > self._dim[1] - 1:
-                            continue
-                        if self._states[-1][i][j] == "#":
-                            occupied += 1
-                if value == "L" and occupied == 0:
-                    value = "#"
-                elif value == "#" and occupied >= 4:
-                    value = "L"
-                new_state[r].append(value)
-        self._states.append(new_state)
+# fmt: off
+DIRECTIONS = [(-1, -1), (-1, 0), (-1, 1),
+              ( 0, -1),          ( 0, 1),
+              ( 1, -1), ( 1, 0), ( 1, 1)]
+# fmt: on
+
+
+class Grid:
+    def __init__(self, grid: List[List[str]]) -> None:
+        self._grid = grid
+        self._rows = len(grid)
+        self._cols = len(grid[0])
+
+    @property
+    def cols(self) -> int:
+        return self._cols
+
+    @property
+    def rows(self) -> int:
+        return self._rows
+
+    @property
+    def occupied(self) -> int:
+        return sum([sum([1 for cell in row if cell == "#"]) for row in self._grid])
 
     @staticmethod
-    def _to_matrix(data):
-        m = []
-        for line in data.split("\n")[:-1]:
-            m.append([x for x in line])
-        return m
+    def from_text(text: str) -> "Grid":
+        return Grid([[cell for cell in row] for row in text.split("\n")[:-1]])
 
-    @property
-    def epochs(self):
-        return len(self._states)
+    def __getitem__(self, pos: Tuple[int, int]) -> str:
+        m, n = pos
+        return self._grid[m][n]
 
-    @property
-    def stabilized(self):
-        return self.epochs > 1 and str(self._states[-1]) == str(self._states[-2])
+    def __str__(self) -> str:
+        return "\n".join(["".join(row) for row in self._grid])
 
-    @property
-    def occupied(self):
-        n = 0
-        for r in self._states[-1]:
-            for c in r:
-                if c == "#":
-                    n += 1
-        return n
-
-    def __str__(self):
-        return "\n".join(["".join(r) for r in self._states[-1]]) + "\n"
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Grid):
+            return self._grid == other._grid
+        return False
 
 
-TEST_INIT = """L.LL.LL.LL
-LLLLLLL.LL
-L.L.L..L..
-LLLL.LL.LL
-L.LL.LL.LL
-L.LLLLL.LL
-..L.L.....
-LLLLLLLLLL
-L.LLLLLL.L
-L.LLLLL.LL
-"""
-
-TEST_ROUND1 = """#.##.##.##
-#######.##
-#.#.#..#..
-####.##.##
-#.##.##.##
-#.#####.##
-..#.#.....
-##########
-#.######.#
-#.#####.##
-"""
-
-TEST_ROUND2 = """#.LL.L#.##
-#LLLLLL.L#
-L.L.L..L..
-#LLL.LL.L#
-#.LL.LL.LL
-#.LLLL#.##
-..L.L.....
-#LLLLLLLL#
-#.LLLLLL.L
-#.#LLLL.##
-"""
-
-TEST_ROUND3 = """#.##.L#.##
-#L###LL.L#
-L.#.#..#..
-#L##.##.L#
-#.##.LL.LL
-#.###L#.##
-..#.#.....
-#L######L#
-#.LL###L.L
-#.#L###.##
-"""
-
-TEST_ROUND4 = """#.#L.L#.##
-#LLL#LL.L#
-L.L.L..#..
-#LLL.##.L#
-#.LL.LL.LL
-#.LL#L#.##
-..L.L.....
-#L#LLLL#L#
-#.LLLLLL.L
-#.#L#L#.##
-"""
-
-TEST_ROUND5 = """#.#L.L#.##
-#LLL#LL.L#
-L.#.L..#..
-#L##.##.L#
-#.#L.LL.LL
-#.#L#L#.##
-..L.L.....
-#L#L##L#L#
-#.LLLLLL.L
-#.#L#L#.##
-"""
-
-model = Model(TEST_INIT)
-assert str(model) == TEST_INIT
-model.step()
-assert str(model) == TEST_ROUND1
-model.step()
-assert str(model) == TEST_ROUND2
-model.step()
-assert str(model) == TEST_ROUND3
-model.step()
-assert str(model) == TEST_ROUND4
-model.step()
-assert str(model) == TEST_ROUND5
+def look_direction(position: Tuple[int, int], direction: Tuple[int, int], grid: Grid, limit: int) -> str:
+    (m, n) = position
+    (md, nd) = direction
+    radius = 0
+    while limit == -1 or radius < limit:
+        radius += 1
+        if 0 <= m + md * radius < grid.rows and 0 <= n + nd * radius < grid.cols:
+            if grid[m + md * radius, n + nd * radius] != ".":
+                return grid[m + md * radius, n + nd * radius]
+        else:
+            return "."
+    return grid[m + md * radius, n + nd * radius]
 
 
-model = Model(TEST_INIT)
-while not model.stabilized:
-    model.step()
+def evaluate_position(position: Tuple[int, int], grid: Grid, limit: int, tolerance: int) -> str:
+    occupied = 0
+    for direction in DIRECTIONS:
+        if look_direction(position, direction, grid, limit) == "#":
+            occupied += 1
+    if occupied == 0 and grid[position] == "L":
+        return "#"
+    if occupied >= tolerance and grid[position] == "#":
+        return "L"
+    return grid[position]
 
-assert model.occupied == 37
 
-model = Model(data)
-while not model.stabilized:
-    model.step()
+def step(grid: Grid, limit: int, tolerance: int) -> Grid:
+    new_grid = []
+    for m in range(grid.rows):
+        new_row = []
+        for n in range(grid.cols):
+            new_row.append(evaluate_position((m, n), grid, limit, tolerance))
+        new_grid.append(new_row)
+    return Grid(new_grid)
 
-data = None
-with open("input/day11.txt") as f:
-    data = f.read()
 
-print("part1 solution:", model.occupied)
+def step_until_equilibrium(grid: Grid, limit: int = 1, tolerance: int = 4) -> Grid:
+    prev = None
+    while grid != prev:
+        prev = grid
+        grid = step(grid, limit, tolerance)
+    return grid
+
+
+if __name__ == "__main__":
+    data = None
+    with open("input/day11.txt") as f:
+        data = f.read()
+
+    grid = Grid.from_text(data)
+    grid = step_until_equilibrium(grid)
+    print("part1 solution:", grid.occupied)
+
+    grid = Grid.from_text(data)
+    grid = step_until_equilibrium(grid, -1, 5)
+    print("part2 solution:", grid.occupied)
