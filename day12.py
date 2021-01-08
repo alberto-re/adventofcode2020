@@ -2,66 +2,51 @@
 # --- Day 12: Rain Risk ---
 
 from typing import Tuple
+from dataclasses import dataclass
 from math import cos, sin, radians
 
 
 DIRECTIONS = ["N", "W", "S", "E"]
 
 
+@dataclass
 class Position:
-
     """A class representing a pair of x, y coordinates"""
 
-    def __init__(self, x: int = 0, y: int = 0) -> None:
-        self._x = x
-        self._y = y
+    x: int = 0
+    y: int = 0
 
     def move(self, direction: str, units: int) -> None:
         assert direction in DIRECTIONS
         if direction == "N":
-            self._y += units
+            self.y += units
         elif direction == "S":
-            self._y -= units
+            self.y -= units
         elif direction == "E":
-            self._x += units
+            self.x += units
         elif direction == "W":
-            self._x -= units
+            self.x -= units
 
     def move_towards(self, waypoint: "Position", units: int) -> None:
         relx, rely = units * waypoint.x, units * waypoint.y
-        self._x += relx
-        self._y += rely
+        self.x += relx
+        self.y += rely
 
     def rotate(self, direction: str, degrees: int) -> None:
         assert degrees % 90 == 0
         assert direction in ["L", "R"]
         theta = radians(90)
         for _ in range(degrees // 90):
-            (x, y) = self._x, self._y
+            (x, y) = self.x, self.y
             if direction == "R":
-                self._x = x * cos(-theta) - y * sin(-theta)
-                self._y = x * sin(-theta) + y * cos(-theta)
+                self.x = x * cos(-theta) - y * sin(-theta)
+                self.y = x * sin(-theta) + y * cos(-theta)
             if direction == "L":
-                self._x = x * cos(theta) - y * sin(theta)
-                self._y = x * sin(theta) + y * cos(theta)
+                self.x = x * cos(theta) - y * sin(theta)
+                self.y = x * sin(theta) + y * cos(theta)
 
-    def manhattan(self, other: "Position") -> int:
-        return round(abs(self.x - other.x) + abs(self.y - other.y))
-
-    @property
-    def x(self) -> int:
-        return self._x
-
-    @property
-    def y(self) -> int:
-        return self._y
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, Position):
-            return self.x == other.x and self.y == other.y
-        if isinstance(other, tuple):
-            return self.x == other[0] and self.y == other[1]
-        return False
+    def manhattan(self) -> int:
+        return round(abs(self.x) + abs(self.y))
 
 
 class Ship:
@@ -136,7 +121,7 @@ if __name__ == "__main__":
     for i in data.split("\n")[:-1]:
         navigate(ship, i)
 
-    print("part1 solution:", ship.position.manhattan(starting_position))
+    print("part1 solution:", ship.position.manhattan())
 
     starting_position = Position(0, 0)
     waypoint = Position(10, 1)
@@ -144,4 +129,4 @@ if __name__ == "__main__":
     for i in data.split("\n")[:-1]:
         navigate(ship, i, waypoint)
 
-    print("part2 solution:", ship.position.manhattan(starting_position))
+    print("part2 solution:", ship.position.manhattan())

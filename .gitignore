@@ -1,3 +1,4 @@
 /input
 .mypy_cache
 __pycache__
+*.swp
