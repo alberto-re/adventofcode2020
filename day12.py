@@ -6,18 +6,12 @@ from dataclasses import dataclass
 from math import cos, sin, radians
 
 
-DIRECTIONS = ["N", "W", "S", "E"]
-
-
 @dataclass
 class Position:
-    """A class representing a pair of x, y coordinates"""
-
     x: int = 0
     y: int = 0
 
     def move(self, direction: str, units: int) -> None:
-        assert direction in DIRECTIONS
         if direction == "N":
             self.y += units
         elif direction == "S":
@@ -26,24 +20,26 @@ class Position:
             self.x += units
         elif direction == "W":
             self.x -= units
+        else:
+            raise ValueError(f"invalid direction {direction}")
 
     def move_towards(self, waypoint: "Position", units: int) -> None:
-        relx, rely = units * waypoint.x, units * waypoint.y
-        self.x += relx
-        self.y += rely
+        self.x += units * waypoint.x
+        self.y += units * waypoint.y
 
     def rotate(self, direction: str, degrees: int) -> None:
         assert degrees % 90 == 0
-        assert direction in ["L", "R"]
         theta = radians(90)
         for _ in range(degrees // 90):
             (x, y) = self.x, self.y
             if direction == "R":
                 self.x = x * cos(-theta) - y * sin(-theta)
                 self.y = x * sin(-theta) + y * cos(-theta)
-            if direction == "L":
+            elif direction == "L":
                 self.x = x * cos(theta) - y * sin(theta)
                 self.y = x * sin(theta) + y * cos(theta)
+            else:
+                raise ValueError(f"invalid direction {direction}")
 
     def manhattan(self) -> int:
         return round(abs(self.x) + abs(self.y))
